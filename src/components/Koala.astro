@@ -1,0 +1,134 @@
+---
+// The koala from the app icon, rebuilt as layered SVG so the head,
+// pupils and the whole scene can react to the cursor in 3D.
+---
+<div class="scene-col">
+  <div class="scene" id="scene" aria-hidden="true">
+    <svg viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg" id="koala-svg">
+      <!-- soft ground shadow -->
+      <ellipse cx="172" cy="448" rx="120" ry="16" fill="#3e7e5c" opacity="0.55"/>
+
+      <!-- the K -->
+      <g stroke="#f7f4ed" stroke-width="58" stroke-linecap="round" fill="none" class="layer-k">
+        <path d="M118 168 V 412"/>
+        <path d="M252 192 L 128 296"/>
+        <path d="M150 288 L 256 414"/>
+      </g>
+
+      <!-- koala -->
+      <g id="koala-head" class="layer-koala">
+        <!-- ears -->
+        <circle cx="78" cy="78" r="44" fill="#c2c9d1"/>
+        <circle cx="78" cy="80" r="21" fill="#e5a8ad"/>
+        <circle cx="222" cy="78" r="44" fill="#c2c9d1"/>
+        <circle cx="222" cy="80" r="21" fill="#e5a8ad"/>
+        <!-- head -->
+        <circle cx="150" cy="122" r="92" fill="#c2c9d1"/>
+        <!-- eye sockets -->
+        <circle cx="116" cy="112" r="15" fill="#cfd5dc"/>
+        <circle cx="184" cy="112" r="15" fill="#cfd5dc"/>
+        <!-- pupils (cursor-tracked) -->
+        <circle id="pupil-l" cx="116" cy="112" r="8.5" fill="#2e3339"/>
+        <circle id="pupil-r" cx="184" cy="112" r="8.5" fill="#2e3339"/>
+        <!-- nose -->
+        <ellipse cx="150" cy="150" rx="16" ry="23" fill="#2e3339"/>
+      </g>
+
+      <!-- paws gripping the K -->
+      <g class="layer-paws">
+        <rect x="116" y="206" width="30" height="42" rx="15" fill="#c2c9d1"/>
+        <rect x="154" y="206" width="30" height="42" rx="15" fill="#c2c9d1"/>
+      </g>
+    </svg>
+  </div>
+  <p class="scene-caption">He keeps your prompts. He's also keeping an eye you right now.</p>
+</div>
+
+<style>
+  .scene-col { display: grid; justify-items: center; gap: 18px; }
+  .scene {
+    width: min(360px, 80vw);
+    perspective: 900px;
+  }
+  .scene svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform-style: preserve-3d;
+    will-change: transform;
+    filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.18));
+  }
+  #koala-head { will-change: transform; }
+  .scene-caption {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--cream-dim);
+    opacity: 0.75;
+    text-align: center;
+    max-width: 32ch;
+  }
+</style>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const svg = document.getElementById('koala-svg');
+  const head = document.getElementById('koala-head');
+  const pupils = [document.getElementById('pupil-l'), document.getElementById('pupil-r')];
+
+  if (svg && head && !reduced) {
+    let tx = 0, ty = 0;          // target normalized cursor offset (-1..1)
+    let cx = 0, cy = 0;          // current (lerped)
+    let raf = 0;
+
+    const onMove = (e) => {
+      const r = svg.getBoundingClientRect();
+      const mx = e.clientX - (r.left + r.width / 2);
+      const my = e.clientY - (r.top + r.height * 0.3); // pivot near the head
+      // normalize against viewport so the koala watches across the whole page
+      tx = Math.max(-1, Math.min(1, mx / (window.innerWidth / 2)));
+      ty = Math.max(-1, Math.min(1, my / (window.innerHeight / 2)));
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
+    const tick = () => {
+      cx += (tx - cx) * 0.12;
+      cy += (ty - cy) * 0.12;
+
+      // 3D tilt of the whole scene
+      svg.style.transform =
+        `rotateY(${(cx * 9).toFixed(2)}deg) rotateX(${(-cy * 7).toFixed(2)}deg) translateZ(0)`;
+
+      // head leans toward the cursor
+      head.style.transform =
+        `translate(${(cx * 9).toFixed(2)}px, ${(cy * 7).toFixed(2)}px) rotate(${(cx * 4).toFixed(2)}deg)`;
+      head.style.transformOrigin = '150px 122px';
+
+      // pupils track harder than the head
+      for (const p of pupils) {
+        if (p) p.style.transform = `translate(${(cx * 6).toFixed(2)}px, ${(cy * 5).toFixed(2)}px)`;
+      }
+
+      if (Math.abs(tx - cx) > 0.002 || Math.abs(ty - cy) > 0.002) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+
+    // a quick blink every so often
+    const blink = () => {
+      for (const p of pupils) {
+        if (p) {
+          p.setAttribute('ry', '1');
+          p.style.transition = 'none';
+        }
+      }
+      pupils.forEach((p) => p && p.setAttribute('r', '1.5'));
+      setTimeout(() => pupils.forEach((p) => p && p.setAttribute('r', '8.5')), 130);
+      setTimeout(blink, 2600 + Math.random() * 3200);
+    };
+    setTimeout(blink, 2200);
+  }
+</script>

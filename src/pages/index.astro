@@ -1,0 +1,246 @@
+---
+import '../styles/global.css';
+import Koala from '../components/Koala.astro';
+import LivingBackground from '../components/LivingBackground.astro';
+
+const title = 'keptt — Your AI prompts, one hotkey away';
+const description =
+  'keptt is an AI prompt library that lives in your Windows tray. Press a hotkey, fuzzy-find a prompt, fill its variables, and the finished text is on your clipboard. Local-only, no accounts. MacOS coming soon.';
+const url = Astro.site ? Astro.site.toString() : 'https://keptt.app/';
+
+// TODO: point this at your real MSI / release URL before launch
+const downloadUrl = '/downloads/keptt-setup.msi';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'keptt',
+  description,
+  url,
+  image: new URL('/og.png', url).toString(),
+  operatingSystem: 'Windows 10, Windows 11',
+  applicationCategory: 'UtilitiesApplication',
+  softwareHelp: { '@type': 'CreativeWork', url },
+  featureList: [
+    'Global hotkey quick launcher',
+    'Fuzzy search across prompt titles and bodies',
+    'Prompt variables with fill-in before copy',
+    'Tags and full prompt library',
+    'Local-only SQLite storage, no accounts',
+    'Windows system tray app with auto-updates',
+  ],
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={url} />
+    <meta name="theme-color" content="#4d9a70" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-310.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="keptt" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={url} />
+    <meta property="og:image" content={new URL('/og.png', url)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL('/og.png', url)} />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+
+  <body>
+    <LivingBackground />
+
+    <header class="site">
+      <a class="brand" href="/">
+        <img src="/icon-310.png" alt="keptt logo — a koala on a letter K" width="36" height="36" />
+        keptt
+      </a>
+      <a class="btn btn-solid btn-small" href="#download">Download</a>
+    </header>
+
+    <main>
+      <!-- ───────── hero ───────── -->
+      <section class="hero wrap">
+        <div>
+          <p class="eyebrow">AI prompt library · Windows · MacOS coming soon</p>
+          <h1>Every prompt you've perfected. One hotkey away.</h1>
+          <p class="lead">
+            keptt lives quietly in your Windows tray. Press the hotkey, fuzzy-find a
+            prompt, fill its <span class="var">&#123;&#123;variables&#125;&#125;</span>,
+            and the finished text lands on your clipboard — before you've even left
+            ChatGPT, Claude, or whatever you're working in.
+          </p>
+
+          <div class="keys" id="hotkey" aria-label="Default shortcut: Control Shift Space">
+            <kbd>Ctrl</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>Space</kbd>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn btn-solid" href={downloadUrl} id="download-hero">
+              Download for Windows
+            </a>
+            <span class="btn btn-ghost" aria-disabled="true">MacOS — coming soon</span>
+          </div>
+          <p class="hint">Free .msi installer · auto-updates built in · no account needed</p>
+        </div>
+
+        <Koala />
+      </section>
+
+      <!-- ───────── how it works ───────── -->
+      <section class="wrap" id="how">
+        <div class="sec-head">
+          <h2>Press. Find. Paste.</h2>
+          <p>
+            Your best prompts stop living in chat history, sticky notes, and that one
+            text file. keptt turns them into something you can summon in under a second.
+          </p>
+        </div>
+
+        <div class="demo">
+          <ol class="steps">
+            <li>
+              <div>
+                <h3>Summon the launcher</h3>
+                <p>One global hotkey opens a small always-on-top window over any app. Reconfigure it anytime — keptt detects conflicts for you.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Fuzzy-find your prompt</h3>
+                <p>Search titles and bodies, weighted toward titles. An empty search shows your most recent prompts.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Fill the blanks, hit Enter</h3>
+                <p>Prompts can carry placeholders like <span class="var">&#123;&#123;topic&#125;&#125;</span>. keptt asks for the values, then copies the finished prompt to your clipboard.</p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="launcher" role="img" aria-label="The keptt quick launcher: a search for 'follow up' with matching prompts and variable fields for recipient and tone">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="search">&gt;&nbsp;<b>follow up</b><span class="caret"></span></div>
+            <ul>
+              <li class="sel">Polite follow-up email <span class="tag">email</span></li>
+              <li>Follow-up after no reply <span class="tag">email</span></li>
+              <li>Summarize meeting &amp; next steps <span class="tag">work</span></li>
+            </ul>
+            <div class="vars">
+              <span><b>&#123;&#123;recipient&#125;&#125;</b> Amina</span>
+              <span><b>&#123;&#123;tone&#125;&#125;</b> warm, brief</span>
+            </div>
+            <div class="foot"><span>↑↓ navigate</span><span>Enter to copy</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────── features ───────── -->
+      <section class="wrap" id="features">
+        <div class="sec-head">
+          <h2>Small app. Sharp tools.</h2>
+          <p>Everything in keptt exists to shorten the distance between “I have a prompt for this” and pasting it.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <span class="glyph">fzf</span>
+            <h3>Fuzzy search</h3>
+            <p>Typo-tolerant search across titles and bodies, tuned so the prompt you meant comes up first.</p>
+          </div>
+          <div class="card">
+            <span class="glyph">&#123;&#123; &#125;&#125;</span>
+            <h3>Prompt variables</h3>
+            <p>Write prompts once with placeholders, fill them fresh every time. No more hand-editing in the chat box.</p>
+          </div>
+          <div class="card">
+            <span class="glyph">++</span>
+            <h3>Fast capture</h3>
+            <p>Paste a prompt into the launcher and save — keptt suggests a title automatically so you don't break flow.</p>
+          </div>
+          <div class="card">
+            <span class="glyph">#</span>
+            <h3>Tags &amp; library</h3>
+            <p>A full library window for browsing, filtering by tag, editing, and pruning your collection.</p>
+          </div>
+          <div class="card">
+            <span class="glyph">ctrl+</span>
+            <h3>Your hotkey, your rules</h3>
+            <p>Change the global shortcut in settings. If a new one conflicts, keptt restores the last one that worked.</p>
+          </div>
+          <div class="card">
+            <span class="glyph">sys<span class="glyph">▣</span>gt;</span>
+            <h3>Tray-native</h3>
+            <p>Closes to the tray, optionally launches at startup, and updates itself. It's there when you need it, invisible when you don't.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────── local-first ───────── -->
+      <section class="local" id="privacy">
+        <div class="wrap">
+          <h2>Nothing leaves your machine.</h2>
+          <p class="note">
+            Your prompts, tags, and settings live in a local SQLite database. There are no
+            accounts, no server, and no telemetry on your prompt content — your prompt
+            library is yours.
+          </p>
+          <span class="path">%APPDATA%\com.keptt.app\keptt.db</span>
+        </div>
+      </section>
+
+      <!-- ───────── final cta ───────── -->
+      <section class="final wrap" id="download">
+        <h2>Stop retyping your best prompts.</h2>
+        <div class="cta-row">
+          <a class="btn btn-solid" href={downloadUrl}>Download keptt for Windows</a>
+        </div>
+        <p class="hint">
+          Coming from PromptSnap? keptt imports your old library automatically on first run.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site">
+      <span>© 2026 keptt</span>
+      <span class="mono">built with Tauri + Rust · local-only by design</span>
+    </footer>
+
+    <script>
+      // Press-feedback on the hotkey keycaps when the user actually presses it
+      const keys = document.getElementById('hotkey');
+      if (keys) {
+        window.addEventListener('keydown', (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.code === 'Space' || e.key === ' ')) {
+            keys.classList.add('pressed');
+            setTimeout(() => keys.classList.remove('pressed'), 220);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

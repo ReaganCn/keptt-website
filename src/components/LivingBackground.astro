@@ -1,0 +1,159 @@
+---
+// Living background: a field of drifting motes on the brand green.
+// Reacts to the cursor (repulsion + constellation lines), clicks
+// (ripple burst) and scroll (parallax drift). Honors reduced motion.
+---
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<script>
+  const canvas = document.getElementById('bg');
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let W = 0, H = 0, dpr = 1;
+  let particles = [];
+  let ripples = [];
+  const mouse = { x: -9999, y: -9999 };
+  let scrollDrift = 0;
+
+  const COLORS = ['rgba(247,244,237,0.5)', 'rgba(106,185,140,0.85)', 'rgba(229,168,173,0.45)'];
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    seed();
+  }
+
+  function seed() {
+    const count = Math.min(110, Math.floor((W * H) / 16000));
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: 1.2 + Math.random() * 2.4,
+      c: COLORS[(Math.random() * COLORS.length) | 0],
+    }));
+  }
+
+  function staticPaint() {
+    // reduced-motion fallback: one quiet, still field
+    ctx.clearRect(0, 0, W, H);
+    for (const p of particles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.c;
+      ctx.fill();
+    }
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+
+    // ripples from clicks
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rp = ripples[i];
+      rp.r += 6;
+      rp.a *= 0.94;
+      if (rp.a < 0.01) { ripples.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(247,244,237,${rp.a})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    for (const p of particles) {
+      // cursor repulsion
+      const dx = p.x - mouse.x;
+      const dy = p.y - mouse.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 130 * 130 && d2 > 0.01) {
+        const d = Math.sqrt(d2);
+        const f = (1 - d / 130) * 0.6;
+        p.vx += (dx / d) * f;
+        p.vy += (dy / d) * f;
+      }
+      // ripple push
+      for (const rp of ripples) {
+        const rdx = p.x - rp.x, rdy = p.y - rp.y;
+        const rd = Math.hypot(rdx, rdy);
+        if (Math.abs(rd - rp.r) < 26 && rd > 0.01) {
+          p.vx += (rdx / rd) * rp.a * 2.4;
+          p.vy += (rdy / rd) * rp.a * 2.4;
+        }
+      }
+
+      p.x += p.vx;
+      p.y += p.vy + scrollDrift;
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      // keep a gentle base drift
+      p.vx += (Math.random() - 0.5) * 0.012;
+      p.vy += (Math.random() - 0.5) * 0.012;
+
+      if (p.x < -10) p.x = W + 10; else if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10; else if (p.y > H + 10) p.y = -10;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.c;
+      ctx.fill();
+    }
+
+    // constellation lines near the cursor
+    const near = particles.filter((p) => {
+      const dx = p.x - mouse.x, dy = p.y - mouse.y;
+      return dx * dx + dy * dy < 170 * 170;
+    });
+    for (let i = 0; i < near.length; i++) {
+      for (let j = i + 1; j < near.length; j++) {
+        const a = near[i], b = near[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 95 * 95) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(247,244,237,${0.16 * (1 - Math.sqrt(d2) / 95)})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    scrollDrift *= 0.9;
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', () => {
+    resize();
+    if (reduced) staticPaint();
+  });
+  resize();
+
+  if (reduced) {
+    staticPaint();
+  } else {
+    window.addEventListener('pointermove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    }, { passive: true });
+    window.addEventListener('pointerdown', (e) => {
+      ripples.push({ x: e.clientX, y: e.clientY, r: 4, a: 0.5 });
+    }, { passive: true });
+    let lastY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      scrollDrift = Math.max(-2.5, Math.min(2.5, (lastY - y) * 0.06));
+      lastY = y;
+    }, { passive: true });
+    requestAnimationFrame(frame);
+  }
+</script>
